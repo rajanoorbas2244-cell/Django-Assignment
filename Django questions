@@ -1,0 +1,63 @@
+#Question 1: By default are django signals executed synchronously or asynchronously? Please support your answer with a code snippet that conclusively proves your stance. The code does not need to be elegant and production ready, we just need to understand your logic.
+Django signals are executed synchronously by default. This means that when a signal is triggered, the associated receivers (the functions that are called in response to the signal) will be executed in the same thread as the code that triggered the signal.
+
+# myapp/signals.py
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import 
+
+#Question 2: Do django signals run in the same thread as the caller? Please support your answer with a code snippet that conclusively proves your stance. The code does not need to be elegant and production ready, we just need to understand your logic.
+Django signals do run in the same thread as the caller. This means that when a signal is triggered, the associated receivers will be executed in the same thread as the code that triggered the signal.
+# myapp/signals.py
+import threading
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+
+@receiver(post_save, sender=User)
+def my_receiver(sender, instance, **kwargs):
+    print(f"Receiver thread: {threading.get_ident()}")
+
+# myapp/views.py
+from django.contrib.auth.models import User
+from django.views import View
+
+class MyView(View):
+    def get(self, request):
+        user = User.objects.create(username="test", email="test@example.com")
+        print(f"View thread: {threading.get_ident()}")
+        return HttpResponse("User created")
+#we define a signal receiver my_receiver that prints the thread ID when it's called. We also define a view MyView that creates a new user and prints the thread ID before returning a response.
+When we run this code, we'll see that both the view and the signal receiver print the same thread ID, demonstrating that they're running in the same thread.
+
+#Question 3: By default do django signals run in the same database transaction as the caller? Please support your answer with a code snippet that conclusively proves your stance. The code does not need to be elegant and production ready, we just need to understand your logic.
+Django signals do run in the same database transaction as the caller. This means that if the signal receiver raises an exception, it will roll back the entire transaction, including any changes made by the code that triggered the signal.
+# myapp/signals.py
+from django.db import transaction
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+
+@receiver(post_save, sender=User)
+def my_receiver(sender, instance, **kwargs):
+    # Simulate an error in the signal receiver
+    raise RuntimeError("Error in signal receiver")
+
+# myapp/views.py
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.views import View
+
+class MyView(View):
+    def get(self, request):
+        try:
+            with transaction.atomic():
+                user = User.objects.create(username="test", email="test@example.com")
+                print("User created")
+        except RuntimeError as e:
+            print(f"Error: {e}")
+        return HttpResponse("Done")
+#we define a signal receiver my_receiver that raises a RuntimeError when it's called. We also define a view MyView that creates a new user within a transaction using transaction.atomic().
+When we run this code, we'll see that the user is not created in the database, and the error message from the signal receiver is printed. This demonstrates that the signal receiver is running in the same database transaction as the code that triggered the signal.
+output:- Error in signal receiver.If we check the database, we'll see that no new user was created, because the transaction was rolled back when the signal receiver raised an exception.
+This conclusively proves that Django signals run in the same database transaction as the caller.
