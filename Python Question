@@ -1,0 +1,26 @@
+'''Description: You are tasked with creating a Rectangle class with the following requirements:
+1)An instance of the Rectangle class requires length:int and width:int to be initialized.
+2)We can iterate over an instance of the Rectangle class 
+3)When an instance of the Rectangle class is iterated over, we first get its length in the format: {'length': <VALUE_OF_LENGTH>} followed by the width {width: <VALUE_OF_WIDTH>}'''
+
+class Rectangle:
+    def __init__(self, length, width):
+        # Initialize the length and width attributes
+        self.length = length
+        self.width = width
+
+    def __iter__(self):
+        # Define a generator to return the length and width dictionaries
+        yield {'length': self.length}
+        yield {'width': self.width}
+
+# Create an instance of the Rectangle class
+rect = Rectangle(4, 5)
+
+# Iterate over the rectangle instance
+for item in rect:
+    print(item)
+
+'''The __init__ method is a special method in Python that is called when an object is created. It initializes the length and width attributes of the Rectangle instance.
+The __iter__ method is another special method that allows an object to be iterable. In this case, we use the yield keyword to define a generator that returns two dictionaries: one with the length value and another with the width value.
+When we create an instance of the Rectangle class and iterate over it using a for loop, the __iter__ method is called, and it returns the length and width dictionaries in the desired format.'''
